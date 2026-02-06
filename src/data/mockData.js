@@ -284,15 +284,15 @@ export const getMeshBand = (count) => {
 };
 
 export const meshBandColors = {
-  high: "#73c95c",
-  mid: "#4e9f3d",
-  low: "#2f6b34",
+  high: "#a6463a",
+  mid: "#b08b2a",
+  low: "#3f7f3b",
 };
 
 export const occupancyColors = {
-  high: "#5fb950",
-  mid: "#3c7e3a",
-  low: "#26592f",
+  high: "#b14a3b",
+  mid: "#b08b2a",
+  low: "#3a7a36",
 };
 
 export { clamp };

@@ -24,26 +24,26 @@ const mapStyle = {
     {
       id: "background",
       type: "background",
-      paint: { "background-color": "#191a19" },
+      paint: { "background-color": "#0b0b0b" },
     },
     {
       id: "maptiler-base",
       type: "raster",
       source: "maptiler",
       paint: {
-        "raster-saturation": -0.9,
-        "raster-contrast": 0.1,
+        "raster-saturation": -0.95,
+        "raster-contrast": 0.15,
         "raster-brightness-min": 0,
-        "raster-brightness-max": 0.25,
-        "raster-opacity": 0.7,
+        "raster-brightness-max": 0.22,
+        "raster-opacity": 0.6,
       },
     },
   ],
 };
 
 const deltaColors = {
-  up: "#6fcb5a",
-  down: "#2f6b34",
+  up: "#a6463a",
+  down: "#3f7f3b",
 };
 
 const Timeline = ({
@@ -54,6 +54,7 @@ const Timeline = ({
   isAutoPlaying,
   onToggleAutoPlay,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const startLabel = timeSlots[0] ?? "--:--";
   const endLabel = timeSlots[timeSlots.length - 1] ?? "--:--";
   const progress =
@@ -62,148 +63,248 @@ const Timeline = ({
       : 0;
 
   return (
-    <div className="glass-panel absolute left-1/2 top-4 z-[20] w-[92vw] max-w-[430px] -translate-x-1/2 rounded-[28px] px-5 py-4 shadow-lg sm:top-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="glass-panel absolute left-1/2 top-4 z-[20] w-[92vw] max-w-[440px] -translate-x-1/2 rounded-[28px] px-5 py-4 shadow-lg sm:top-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#9fd1a5]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
             タイムライン
           </div>
-          <div className="mt-1 text-[11px] text-slate-400">
+          <div className="mt-1 text-[11px] text-slate-500">
             {startLabel} 〜 {endLabel} ・ 15分刻み
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
-            現在
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+              現在
+            </div>
+            <div className="text-lg font-semibold text-slate-50">
+              {timeSlots[timeIndex]}
+            </div>
           </div>
-          <div className="text-lg font-semibold text-slate-50">{timeSlots[timeIndex]}</div>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 transition hover:border-[#4E9F3D]/60"
+          >
+            {isCollapsed ? "展開" : "折りたたみ"}
+          </button>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-        <span>
-          Slot {timeIndex + 1}/{timeSlots.length}
-        </span>
-        <span>{progress}%</span>
-      </div>
+      {!isCollapsed && (
+        <>
+          <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <span>
+              Slot {timeIndex + 1}/{timeSlots.length}
+            </span>
+            <span>{progress}%</span>
+          </div>
 
-      <input
-        className="timeline-range mt-2 w-full"
-        type="range"
-        min="0"
-        max={timeSlots.length - 1}
-        value={timeIndex}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
+          <div className="timeline-track">
+            <input
+              className="timeline-range"
+              type="range"
+              min="0"
+              max={timeSlots.length - 1}
+              value={timeIndex}
+              onChange={(event) => onChange(Number(event.target.value))}
+            />
+          </div>
 
-      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-        <span>{startLabel}</span>
-        <span>{endLabel}</span>
-      </div>
+          <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+            <span>{startLabel}</span>
+            <span>{endLabel}</span>
+          </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-200">
-        <div className="rounded-xl border border-[#1E5128]/70 bg-[#191A19]/70 px-3 py-2">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            平均密度
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-200">
+            <div className="rounded-xl border border-white/10 bg-[#0b0b0b]/80 px-3 py-2">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                平均密度
+              </div>
+              <div className="mt-1 text-sm font-semibold text-slate-50">
+                {stats.avgMesh}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[#0b0b0b]/80 px-3 py-2">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                ピーク密度
+              </div>
+              <div className="mt-1 text-sm font-semibold text-slate-50">
+                {stats.peakMesh}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[#0b0b0b]/80 px-3 py-2">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                平均稼働率
+              </div>
+              <div className="mt-1 text-sm font-semibold text-slate-50">
+                {stats.avgOccupancy}%
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[#0b0b0b]/80 px-3 py-2">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                平均料金
+              </div>
+              <div className="mt-1 text-sm font-semibold text-slate-50">
+                {formatYen(stats.avgPrice)}
+              </div>
+            </div>
           </div>
-          <div className="mt-1 text-sm font-semibold text-slate-50">{stats.avgMesh}</div>
-        </div>
-        <div className="rounded-xl border border-[#1E5128]/70 bg-[#191A19]/70 px-3 py-2">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            ピーク密度
-          </div>
-          <div className="mt-1 text-sm font-semibold text-slate-50">{stats.peakMesh}</div>
-        </div>
-        <div className="rounded-xl border border-[#1E5128]/70 bg-[#191A19]/70 px-3 py-2">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            平均稼働率
-          </div>
-          <div className="mt-1 text-sm font-semibold text-slate-50">{stats.avgOccupancy}%</div>
-        </div>
-        <div className="rounded-xl border border-[#1E5128]/70 bg-[#191A19]/70 px-3 py-2">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            平均料金
-          </div>
-          <div className="mt-1 text-sm font-semibold text-slate-50">
-            {formatYen(stats.avgPrice)}
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <button
-          className={`timeline-play ${isAutoPlaying ? "is-playing" : ""}`}
-          onClick={onToggleAutoPlay}
-          type="button"
-        >
-          {isAutoPlaying ? "再生中 · 停止" : "自動再生"}
-        </button>
-        <div className="text-[10px] text-slate-500">最初から最後まで1回再生</div>
-      </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <button
+              className={`timeline-play ${isAutoPlaying ? "is-playing" : ""}`}
+              onClick={onToggleAutoPlay}
+              type="button"
+            >
+              {isAutoPlaying ? "再生中 · 停止" : "自動再生"}
+            </button>
+            <div className="text-[10px] text-slate-500">最初から最後まで1回再生</div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-const Legend = () => (
-  <div className="glass-panel absolute bottom-4 left-4 z-[20] w-[80vw] max-w-[16rem] rounded-2xl px-4 py-4 text-xs text-slate-300 shadow-lg sm:bottom-6 sm:left-6">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">メッシュ密度</div>
-    <div className="mt-3 flex items-center gap-2">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: meshBandColors.low }} />
-      <span>低</span>
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: meshBandColors.mid }} />
-      <span>中</span>
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: meshBandColors.high }} />
-      <span>高</span>
-    </div>
-    <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">駐車稼働率</div>
-    <div className="mt-3 flex items-center gap-2">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: occupancyColors.low }} />
-      <span>低</span>
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: occupancyColors.mid }} />
-      <span>中</span>
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: occupancyColors.high }} />
-      <span>高</span>
-    </div>
-    <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">変化量</div>
-    <div className="mt-3 flex items-center gap-2">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: deltaColors.down }} />
-      <span>減少</span>
-      <span className="h-2.5 w-2.5 rounded-full" style={{ background: deltaColors.up }} />
-      <span>増加</span>
-    </div>
-    <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">フロー矢印</div>
-    <div className="mt-3 flex items-center gap-2">
-      <span className="h-1 w-6 rounded-full bg-[#4E9F3D]" />
-      <span>人流方向</span>
-    </div>
-  </div>
-);
+const Legend = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-const ScenarioCard = ({ scenario }) => (
-  <div className="glass-panel absolute bottom-4 right-4 z-[20] w-[90vw] max-w-[20rem] rounded-2xl px-5 py-4 text-sm text-slate-200 shadow-lg sm:bottom-6 sm:right-6">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">適用中パターン</div>
-    <div className="mt-2 text-lg font-semibold text-slate-50">{scenario.title}</div>
-    <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{scenario.pattern}</div>
-    <p className="mt-3 text-xs leading-relaxed text-slate-300">{scenario.summary}</p>
-    <div className="mt-4 space-y-2 text-xs">
-      {scenario.rules.map((rule) => (
-        <div
-          key={rule}
-          className="rounded-xl border border-[#1E5128]/70 bg-[#191A19]/70 px-3 py-2 shadow-sm"
+  return (
+    <div className="glass-panel absolute bottom-4 left-4 z-[20] w-[80vw] max-w-[16rem] rounded-2xl px-4 py-4 text-xs text-slate-300 shadow-lg sm:bottom-6 sm:left-6">
+      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+        <span>凡例</span>
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 transition hover:border-[#4E9F3D]/60"
         >
-          {rule}
-        </div>
-      ))}
+          {isCollapsed ? "展開" : "折りたたみ"}
+        </button>
+      </div>
+
+      {!isCollapsed && (
+        <>
+          <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+            メッシュ密度
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: meshBandColors.low }}
+            />
+            <span>低</span>
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: meshBandColors.mid }}
+            />
+            <span>中</span>
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: meshBandColors.high }}
+            />
+            <span>高</span>
+          </div>
+          <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+            駐車稼働率
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: occupancyColors.low }}
+            />
+            <span>低</span>
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: occupancyColors.mid }}
+            />
+            <span>中</span>
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: occupancyColors.high }}
+            />
+            <span>高</span>
+          </div>
+          <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+            変化量
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: deltaColors.down }}
+            />
+            <span>減少</span>
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: deltaColors.up }}
+            />
+            <span>増加</span>
+          </div>
+          <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+            フロー矢印
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="h-1 w-6 rounded-full bg-[#4E9F3D]" />
+            <span>人流方向</span>
+          </div>
+        </>
+      )}
     </div>
-  </div>
-);
+  );
+};
+
+const ScenarioCard = ({ scenario }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  return (
+    <div className="glass-panel absolute bottom-4 right-4 z-[20] w-[90vw] max-w-[20rem] rounded-2xl px-5 py-4 text-sm text-slate-200 shadow-lg sm:bottom-6 sm:right-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+            適用中パターン
+          </div>
+          <div className="mt-2 text-lg font-semibold text-slate-50">{scenario.title}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 transition hover:border-[#4E9F3D]/60"
+        >
+          {isCollapsed ? "展開" : "折りたたみ"}
+        </button>
+      </div>
+
+      {!isCollapsed && (
+        <>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+            {scenario.pattern}
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-300">
+            {scenario.summary}
+          </p>
+          <div className="mt-4 space-y-2 text-xs">
+            {scenario.rules.map((rule) => (
+              <div
+                key={rule}
+                className="rounded-xl border border-white/10 bg-[#0b0b0b]/80 px-3 py-2 shadow-sm"
+              >
+                {rule}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const ReportButton = ({ onGenerate, disabled }) => (
   <button
     className={`glass-panel absolute right-4 top-4 z-[20] rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] shadow-lg transition sm:right-6 sm:top-6 ${
       disabled
         ? "cursor-not-allowed opacity-50"
-        : "hover:-translate-y-0.5 hover:bg-[#1E5128]/40"
+        : "hover:-translate-y-0.5 hover:bg-[#101510]/80"
     }`}
     onClick={onGenerate}
     disabled={disabled}
@@ -431,7 +532,7 @@ const MapView = ({
 
     autoPlayRef.current = window.setTimeout(() => {
       onTimeChange(timeIndex + 1);
-    }, 900);
+    }, 500);
 
     return () => window.clearTimeout(autoPlayRef.current);
   }, [isAutoPlaying, timeIndex, timeSlots.length, onTimeChange]);
@@ -459,8 +560,8 @@ const MapView = ({
     paint: {
       "fill-color": ["get", "fill"],
       "fill-opacity": 0.32,
-      "fill-color-transition": { duration: 1000 },
-      "fill-opacity-transition": { duration: 1000 },
+      "fill-color-transition": { duration: 300 },
+      "fill-opacity-transition": { duration: 300 },
     },
   };
 
@@ -490,7 +591,7 @@ const MapView = ({
         80,
         0.38,
       ],
-      "fill-opacity-transition": { duration: 1000 },
+      "fill-opacity-transition": { duration: 300 },
     },
   };
 
@@ -499,10 +600,10 @@ const MapView = ({
     type: "line",
     source: "mesh",
     paint: {
-      "line-color": "#243226",
-      "line-opacity": 0.45,
+      "line-color": "#2a2a2a",
+      "line-opacity": 0.5,
       "line-width": 0.9,
-      "line-opacity-transition": { duration: 1000 },
+      "line-opacity-transition": { duration: 300 },
     },
   };
 
@@ -514,7 +615,7 @@ const MapView = ({
         paint: {
           "line-color": "#4e9f3d",
           "line-width": 0.9,
-          "line-opacity": 0.45,
+          "line-opacity": 0.35,
           "line-dasharray": patternDash[scenario.id],
         },
       }
@@ -564,9 +665,9 @@ const MapView = ({
       "circle-opacity": 0.14,
       "circle-stroke-color": ["get", "color"],
       "circle-stroke-width": 1.6,
-          "circle-color-transition": { duration: 1000 },
-          "circle-radius-transition": { duration: 1000 },
-          "circle-opacity-transition": { duration: 1000 },
+          "circle-color-transition": { duration: 300 },
+          "circle-radius-transition": { duration: 300 },
+          "circle-opacity-transition": { duration: 300 },
         },
       }
     : null;
@@ -579,12 +680,12 @@ const MapView = ({
       "circle-color": ["get", "color"],
       "circle-radius": ["interpolate", ["linear"], ["get", "occupancy"], 30, 5, 100, 9],
       "circle-opacity": 0.78,
-      "circle-stroke-color": "#0f1a12",
+      "circle-stroke-color": "#0b0b0b",
       "circle-stroke-width": 1,
-      "circle-color-transition": { duration: 1000 },
-      "circle-radius-transition": { duration: 1000 },
-      "circle-opacity-transition": { duration: 1000 },
-      "circle-stroke-color-transition": { duration: 1000 },
+      "circle-color-transition": { duration: 300 },
+      "circle-radius-transition": { duration: 300 },
+      "circle-opacity-transition": { duration: 300 },
+      "circle-stroke-color-transition": { duration: 300 },
     },
   };
 
@@ -616,9 +717,9 @@ const MapView = ({
       "line-color": ["get", "color"],
       "line-width": ["interpolate", ["linear"], ["get", "weight"], 0, 1.5, 1.2, 5.5],
       "line-opacity": ["interpolate", ["linear"], ["get", "weight"], 0.2, 0.4, 1.2, 0.82],
-      "line-opacity-transition": { duration: 1000 },
-      "line-width-transition": { duration: 1000 },
-      "line-color-transition": { duration: 1000 },
+      "line-opacity-transition": { duration: 300 },
+      "line-width-transition": { duration: 300 },
+      "line-color-transition": { duration: 300 },
       ...(scenario?.id === "peak" ? { "line-dasharray": [2, 4] } : {}),
     },
   };
@@ -630,8 +731,8 @@ const MapView = ({
     paint: {
       "fill-color": ["get", "color"],
       "fill-opacity": 0.75,
-      "fill-outline-color": "#132418",
-      "fill-opacity-transition": { duration: 1000 },
+      "fill-outline-color": "#111111",
+      "fill-opacity-transition": { duration: 300 },
     },
   };
 
@@ -698,7 +799,7 @@ const MapView = ({
 
       {hoverInfo && (
         <div
-          className="pointer-events-none absolute z-[30] rounded-xl bg-[#191A19]/95 px-3 py-2 text-xs text-slate-200 shadow-lg"
+          className="pointer-events-none absolute z-[30] rounded-xl bg-[#0b0b0b]/95 px-3 py-2 text-xs text-slate-200 shadow-lg"
           style={{ left: hoverInfo.point.x + 12, top: hoverInfo.point.y + 12 }}
         >
           {hoverInfo.feature.layer.id === "mesh-fill" ? (

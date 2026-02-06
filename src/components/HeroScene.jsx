@@ -30,8 +30,8 @@ const HeroScene = () => {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const colorA = new THREE.Color("#4e9f3d");
-    const colorB = new THREE.Color("#1e5128");
-    const colorC = new THREE.Color("#6fcb5a");
+    const colorB = new THREE.Color("#202420");
+    const colorC = new THREE.Color("#7aa96a");
 
     for (let i = 0; i < count; i += 1) {
       const radius = 1.1 + Math.random() * 2.6;
@@ -67,7 +67,7 @@ const HeroScene = () => {
     const ringMaterial = new THREE.MeshBasicMaterial({
       color: "#4e9f3d",
       transparent: true,
-      opacity: 0.18,
+      opacity: 0.12,
       side: THREE.DoubleSide,
     });
 
@@ -76,7 +76,7 @@ const HeroScene = () => {
     ringA.rotation.z = Math.PI / 5;
 
     const ringB = new THREE.Mesh(new THREE.RingGeometry(2.05, 2.1, 200), ringMaterial.clone());
-    ringB.material.opacity = 0.12;
+    ringB.material.opacity = 0.08;
     ringB.rotation.x = Math.PI / 2.5;
     ringB.rotation.z = -Math.PI / 6;
 

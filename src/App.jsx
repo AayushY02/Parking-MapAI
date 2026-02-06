@@ -141,7 +141,7 @@ const App = () => {
     if (!imageDataUrl) {
       const canvas = await html2canvas(mapContainerRef.current, {
         useCORS: true,
-        backgroundColor: "#191a19",
+        backgroundColor: "#0b0b0b",
         scale: 2,
       });
       imageDataUrl = canvas.toDataURL("image/png");
@@ -213,7 +213,7 @@ const App = () => {
               <div className="hero-visual" data-reveal style={{ transitionDelay: "120ms" }}>
                 <HeroScene />
                 <div className="hero-glow" />
-                <div className="hero-card">
+                {/* <div className="hero-card">
                   <div className="hero-card-title">シミュレーション概況</div>
                   <p className="text-xs text-slate-300">
                     12:30〜13:30に需要が最大化。価格と誘導の組み合わせで
@@ -222,13 +222,13 @@ const App = () => {
                   <div className="hero-card-badge">
                     シナリオ準備完了：{parkingLots.length}拠点で動的価格波を適用
                   </div>
-                </div>
-                <div className="hero-card mini" style={{ bottom: "8%", right: "8%" }}>
+                </div> */}
+                {/* <div className="hero-card mini" style={{ bottom: "8%", right: "8%" }}>
                   <div className="hero-card-title">体験の流れ</div>
                   <p className="text-xs text-slate-300">
                     時系列をスライドして、密度の変化と流動矢印を比較。
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </section>
@@ -325,7 +325,7 @@ const App = () => {
   if (screen === "current") {
     return (
       <div className="app-shell px-6 py-16">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-[#1E5128]/70 bg-[#191A19]/80 p-10 shadow-lg">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-[#0b0b0b]/85 p-10 shadow-lg">
           <div className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
             マップAI
           </div>

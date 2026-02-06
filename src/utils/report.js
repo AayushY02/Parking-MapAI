@@ -17,14 +17,14 @@ export const buildReportHtml = ({ scenario, timeLabel, stats, imageDataUrl }) =>
     <title>マップAI レポート - ${timeLabel}</title>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;600&display=swap');
-      body { font-family: 'Zen Kaku Gothic New', Arial, sans-serif; margin: 32px; color: #e2e8f0; background: #191a19; }
+      body { font-family: 'Zen Kaku Gothic New', Arial, sans-serif; margin: 32px; color: #e2e8f0; background: #0b0b0b; }
       h1 { font-family: 'Shippori Mincho B1', serif; }
       h1 { font-size: 28px; margin-bottom: 8px; }
-      h2 { font-size: 18px; margin-top: 24px; color: #cfe8c6; }
-      .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(78, 159, 61, 0.18); font-size: 12px; color: #e2e8f0; }
+      h2 { font-size: 18px; margin-top: 24px; color: #d1d5db; }
+      .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(78, 159, 61, 0.2); font-size: 12px; color: #e2e8f0; }
       .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-      .card { border: 1px solid rgba(78, 159, 61, 0.3); border-radius: 12px; padding: 12px; background: rgba(30, 81, 40, 0.28); }
-      img { max-width: 100%; border-radius: 16px; border: 1px solid rgba(78, 159, 61, 0.25); }
+      .card { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; background: rgba(15, 15, 15, 0.8); }
+      img { max-width: 100%; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); }
       ul { padding-left: 18px; }
       li { margin: 6px 0; }
     </style>
