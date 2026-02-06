@@ -419,6 +419,8 @@ const MapView = ({
   flowLines,
   scenario,
   onGenerateReport,
+  canGenerateReport = false,
+  onBrandClick,
 }) => {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
@@ -974,8 +976,15 @@ const MapView = ({
           onToggleAutoPlay={handleAutoPlayToggle}
         />
       )}
+      <button
+        type="button"
+        onClick={onBrandClick}
+        className="glass-panel absolute left-4 top-4 z-[20] rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-200 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#1f1f1f]/90 sm:left-6 sm:top-6"
+      >
+        MapAI
+      </button>
       <Legend />
-      <ReportButton onGenerate={onGenerateReport} disabled={!scenario} />
+      <ReportButton onGenerate={onGenerateReport} disabled={!canGenerateReport} />
       {scenario && (
         <ScenarioCard
           scenario={scenario}

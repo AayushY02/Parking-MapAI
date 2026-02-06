@@ -30,6 +30,9 @@ const App = () => {
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [showScenarioDialog, setShowScenarioDialog] = useState(false);
   const [mapPreviewUrl, setMapPreviewUrl] = useState("");
+  const [previewScenario, setPreviewScenario] = useState(null);
+  const [overrideScenario, setOverrideScenario] = useState(null);
+  const previewCaptureRef = useRef(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
 
@@ -51,31 +54,35 @@ const App = () => {
     return () => observer.disconnect();
   }, [screen]);
 
+  const activeScenario = overrideScenario ?? previewScenario ?? selectedScenario;
+
   const meshDisplay = useMemo(() => {
+    const scenarioId = activeScenario?.id;
     return meshCells.map((mesh) => {
       const baseCount = mesh.counts[timeIndex];
       const count = applyScenarioToMeshCount(
         baseCount,
         mesh,
-        selectedScenario?.id
+        scenarioId
       );
       return { ...mesh, count, baseCount };
     });
-  }, [timeIndex, selectedScenario]);
+  }, [timeIndex, activeScenario]);
 
   const scenarioContext = useMemo(
-    () => buildScenarioContext(selectedScenario?.id, meshDisplay),
-    [selectedScenario, meshDisplay]
+    () => buildScenarioContext(activeScenario?.id, meshDisplay),
+    [activeScenario, meshDisplay]
   );
 
   const parkingDisplay = useMemo(() => {
+    const scenarioId = activeScenario?.id;
     return parkingLots.map((lot) => {
       const baseOcc = lot.occupancy[timeIndex];
       const basePrice = lot.price[timeIndex];
       const { occupancy, price } = applyScenarioToParking(
         lot,
         timeIndex,
-        selectedScenario?.id,
+        scenarioId,
         scenarioContext
       );
       return {
@@ -86,22 +93,49 @@ const App = () => {
         basePrice,
       };
     });
-  }, [timeIndex, selectedScenario, scenarioContext]);
+  }, [timeIndex, activeScenario, scenarioContext]);
 
   const flowLines = useMemo(
-    () => buildFlowLines(selectedScenario?.id, meshDisplay, scenarioContext),
-    [selectedScenario, meshDisplay, scenarioContext]
+    () => buildFlowLines(activeScenario?.id, meshDisplay, scenarioContext),
+    [activeScenario, meshDisplay, scenarioContext]
   );
 
-  const reportStats = useMemo(() => {
+  const computeReportStats = (scenarioId) => {
     const meshBase = meshCells.map((mesh) => mesh.counts[timeIndex]);
-    const meshScenario = meshDisplay.map((mesh) => mesh.count);
+    const meshScenario = meshCells.map((mesh) =>
+      applyScenarioToMeshCount(mesh.counts[timeIndex], mesh, scenarioId)
+    );
+
+    const meshDisplayForContext = meshCells.map((mesh) => ({
+      ...mesh,
+      baseCount: mesh.counts[timeIndex],
+      count: applyScenarioToMeshCount(mesh.counts[timeIndex], mesh, scenarioId),
+    }));
+
+    const scenarioContextForStats = buildScenarioContext(
+      scenarioId,
+      meshDisplayForContext
+    );
+
+    const parkingScenarioDisplay = parkingLots.map((lot) => {
+      const { occupancy, price } = applyScenarioToParking(
+        lot,
+        timeIndex,
+        scenarioId,
+        scenarioContextForStats
+      );
+      return {
+        occupancyValue: occupancy,
+        priceValue: price,
+      };
+    });
+
     const occBase = parkingLots.map((lot) => lot.occupancy[timeIndex] * 100);
-    const occScenario = parkingDisplay.map(
+    const occScenario = parkingScenarioDisplay.map(
       (lot) => lot.occupancyValue * 100
     );
     const priceBase = parkingLots.map((lot) => lot.price[timeIndex]);
-    const priceScenario = parkingDisplay.map((lot) => lot.priceValue);
+    const priceScenario = parkingScenarioDisplay.map((lot) => lot.priceValue);
 
     const avgBefore = average(meshBase);
     const avgAfter = average(meshScenario);
@@ -126,11 +160,11 @@ const App = () => {
       occupancyAfter,
       priceBefore,
       priceAfter,
-      narrative: selectedScenario
+      narrative: scenarioId
         ? `ピーク密度は${peakDrop}%低下し、平均稼働率は目標帯に近づきました。`
         : "比較用のベースラインスナップショットを取得しました。",
     };
-  }, [meshDisplay, parkingDisplay, timeIndex, selectedScenario]);
+  };
 
   const captureMapPreview = () => {
     try {
@@ -145,46 +179,93 @@ const App = () => {
     return "";
   };
 
+  const waitForMapFrame = async (delay = 300) => {
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  };
+
+  const clearPreviewTimer = () => {
+    if (previewCaptureRef.current) {
+      window.clearTimeout(previewCaptureRef.current);
+      previewCaptureRef.current = null;
+    }
+  };
+
+  const queueDialogPreview = (delay = 360) => {
+    if (!showScenarioDialog) return;
+    clearPreviewTimer();
+    previewCaptureRef.current = window.setTimeout(async () => {
+      await waitForMapFrame(60);
+      const preview = captureMapPreview();
+      if (preview) {
+        setMapPreviewUrl(preview);
+      }
+    }, delay);
+  };
+
   const handleOpenScenarioDialog = () => {
+    setPreviewScenario(null);
+    setShowScenarioDialog(true);
     const preview = captureMapPreview();
     setMapPreviewUrl(preview);
-    setShowScenarioDialog(true);
   };
 
   const handleSelectScenario = (scenario) => {
     setSelectedScenario(scenario);
     setSelectedMethod("pricing");
+    setPreviewScenario(null);
+    setOverrideScenario(null);
+    clearPreviewTimer();
     setShowScenarioDialog(false);
   };
 
   const handleGenerateReport = async () => {
     if (!selectedScenario || !mapContainerRef.current) return;
 
-    let imageDataUrl = "";
-    try {
-      const mapInstance = mapRef.current?.getMap?.() ?? mapRef.current;
-      const mapCanvas = mapInstance?.getCanvas?.();
-      if (mapCanvas) {
-        imageDataUrl = mapCanvas.toDataURL("image/png");
-      }
-    } catch (error) {
-      console.warn("Map capture failed, fallback to html2canvas.", error);
-    }
+    setPreviewScenario(null);
+    clearPreviewTimer();
 
-    if (!imageDataUrl) {
-      const canvas = await html2canvas(mapContainerRef.current, {
-        useCORS: true,
-        backgroundColor: "#0b0b0b",
-        scale: 2,
-      });
-      imageDataUrl = canvas.toDataURL("image/png");
-    }
+    const captureImage = async () => {
+      let dataUrl = "";
+      try {
+        const mapInstance = mapRef.current?.getMap?.() ?? mapRef.current;
+        const mapCanvas = mapInstance?.getCanvas?.();
+        if (mapCanvas) {
+          dataUrl = mapCanvas.toDataURL("image/png");
+        }
+      } catch (error) {
+        console.warn("Map capture failed, fallback to html2canvas.", error);
+      }
+
+      if (!dataUrl) {
+        const canvas = await html2canvas(mapContainerRef.current, {
+          useCORS: true,
+          backgroundColor: "#0b0b0b",
+          scale: 2,
+        });
+        dataUrl = canvas.toDataURL("image/png");
+      }
+      return dataUrl;
+    };
+
+    setOverrideScenario(null);
+    await waitForMapFrame(350);
+    const beforeImageDataUrl = await captureImage();
+
+    setOverrideScenario(selectedScenario);
+    await waitForMapFrame(350);
+    const afterImageDataUrl = await captureImage();
+
+    setOverrideScenario(null);
+
+    const stats = computeReportStats(selectedScenario?.id);
 
     const reportHtml = buildReportHtml({
       scenario: selectedScenario,
       timeLabel: timeSlots[timeIndex],
-      stats: reportStats,
-      imageDataUrl,
+      stats,
+      beforeImageDataUrl,
+      afterImageDataUrl,
     });
 
     const blob = new Blob([reportHtml], { type: "text/html" });
@@ -423,8 +504,10 @@ const App = () => {
             showTimeline={showTimeline}
             onTimeChange={setTimeIndex}
             flowLines={flowLines}
-            scenario={selectedScenario}
+            scenario={activeScenario}
             onGenerateReport={handleGenerateReport}
+            canGenerateReport={Boolean(selectedScenario)}
+            onBrandClick={() => setScreen("landing")}
             meshCount={meshCells.length}
             parkingCount={parkingLots.length}
             timeLabel={timeSlots[timeIndex]}
@@ -435,10 +518,14 @@ const App = () => {
       {showScenarioDialog && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 py-6"
-          onClick={() => setShowScenarioDialog(false)}
+          onClick={() => {
+            setPreviewScenario(null);
+            clearPreviewTimer();
+            setShowScenarioDialog(false);
+          }}
         >
           <div
-            className="glass-panel w-full max-w-[640px] rounded-3xl border border-white/10 bg-[#0f0f0f]/95 p-6 shadow-2xl"
+            className="glass-panel w-full max-w-[920px] rounded-3xl border border-white/10 bg-[#0f0f0f]/95 p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -448,50 +535,59 @@ const App = () => {
                 </div>
                 <div className="mt-1 text-xl font-semibold text-slate-50">ケースを選択</div>
                 <div className="mt-1 text-xs text-slate-400">
-                  それぞれの施策でマップの流れを比較できます。
+                  ホバーでプレビュー、クリックで選択。
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowScenarioDialog(false)}
+                onClick={() => {
+                  setPreviewScenario(null);
+                  clearPreviewTimer();
+                  setShowScenarioDialog(false);
+                }}
                 className="rounded-full bg-[#1f1f1f] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-200 transition hover:bg-[#242424]"
               >
                 閉じる
               </button>
             </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              {scenarioCases.map((scenario) => {
-                const isActive = selectedScenario?.id === scenario.id;
-                return (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    onClick={() => handleSelectScenario(scenario)}
-                    className={`group w-full overflow-hidden rounded-2xl border text-left transition ${
-                      isActive
-                        ? "border-[#4E9F3D] bg-[#141414] text-white ring-1 ring-[#4E9F3D]/40"
-                        : "border-white/10 bg-[#1a1a1a] text-slate-200 hover:border-[#4E9F3D]/40 hover:bg-[#1f1f1f]"
-                    }`}
-                  >
-                    <div className="relative h-32 w-full overflow-hidden">
-                      {mapPreviewUrl ? (
-                        <img
-                          src={mapPreviewUrl}
-                          alt={`${scenario.title} プレビュー`}
-                          className="h-full w-full object-cover opacity-85 transition group-hover:opacity-95"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-[10px] text-slate-500">
-                          プレビューなし
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                      <div className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-slate-200">
-                        Case {scenario.id}
-                      </div>
-                    </div>
-                    <div className="px-4 py-3">
+            <div className="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#111111]">
+                {mapPreviewUrl ? (
+                  <img
+                    src={mapPreviewUrl}
+                    alt="シナリオプレビュー"
+                    className="h-[320px] w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[320px] items-center justify-center text-xs text-slate-500">
+                    プレビューを取得できません
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {scenarioCases.map((scenario) => {
+                  const isActive = selectedScenario?.id === scenario.id;
+                  return (
+                    <button
+                      key={scenario.id}
+                      type="button"
+                      onClick={() => handleSelectScenario(scenario)}
+                      onMouseEnter={() => {
+                        setPreviewScenario(scenario);
+                        queueDialogPreview();
+                      }}
+                      onMouseLeave={() => {
+                        setPreviewScenario(null);
+                        queueDialogPreview();
+                      }}
+                      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                        isActive
+                          ? "border-[#4E9F3D] bg-[#141414] text-white ring-1 ring-[#4E9F3D]/40"
+                          : "border-white/10 bg-[#1a1a1a] text-slate-200 hover:border-[#4E9F3D]/40 hover:bg-[#1f1f1f]"
+                      }`}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-semibold">{scenario.title}</div>
                         {isActive && (
@@ -504,10 +600,10 @@ const App = () => {
                       <div className="mt-2 text-[11px] text-slate-400 line-clamp-2">
                         {scenario.summary}
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

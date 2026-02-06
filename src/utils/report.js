@@ -1,6 +1,12 @@
 ﻿import { formatYen } from "../data/mockData";
 
-export const buildReportHtml = ({ scenario, timeLabel, stats, imageDataUrl }) => {
+export const buildReportHtml = ({
+  scenario,
+  timeLabel,
+  stats,
+  beforeImageDataUrl,
+  afterImageDataUrl,
+}) => {
   const ruleItems = scenario
     ? scenario.rules.map((rule) => `<li>${rule}</li>`).join("")
     : "";
@@ -61,7 +67,20 @@ export const buildReportHtml = ({ scenario, timeLabel, stats, imageDataUrl }) =>
     </ul>
 
     <h2>マップスナップショット</h2>
-    <img src="${imageDataUrl}" alt="マップのスナップショット" />
+    <div class="grid">
+      <div class="card">
+        <strong>施策前</strong>
+        <div style="margin-top: 8px;">
+          <img src="${beforeImageDataUrl}" alt="施策前のマップ" />
+        </div>
+      </div>
+      <div class="card">
+        <strong>施策後</strong>
+        <div style="margin-top: 8px;">
+          <img src="${afterImageDataUrl}" alt="施策後のマップ" />
+        </div>
+      </div>
+    </div>
 
     <h2>結果の要約</h2>
     <p>${stats.narrative}</p>
