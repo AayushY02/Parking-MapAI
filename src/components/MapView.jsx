@@ -254,8 +254,12 @@ const Legend = () => {
   );
 };
 
-const ScenarioCard = ({ scenario }) => {
+const ScenarioCard = ({ scenario, stats, timeLabel, meshCount, parkingCount }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const formatSigned = (value) => {
+    if (!Number.isFinite(value) || value === 0) return "±0";
+    return value > 0 ? `+${value}` : `${value}`;
+  };
 
   return (
     <div className="glass-panel absolute bottom-4 right-4 z-[20] w-[90vw] max-w-[20rem] rounded-2xl px-5 py-4 text-sm text-slate-200 shadow-lg sm:bottom-6 sm:right-6">
@@ -283,6 +287,62 @@ const ScenarioCard = ({ scenario }) => {
           <p className="mt-3 text-xs leading-relaxed text-slate-300">
             {scenario.summary}
           </p>
+          <div className="mt-3 grid gap-2 text-[11px] text-slate-300">
+            <div className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-2">
+              <span>時刻</span>
+              <span className="font-semibold text-slate-100">{timeLabel}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-2">
+              <span>対象メッシュ</span>
+              <span className="font-semibold text-slate-100">
+                {meshCount} セル
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-black/40 px-3 py-2">
+              <span>対象駐車場</span>
+              <span className="font-semibold text-slate-100">
+                {parkingCount} 箇所
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-2 text-[11px] text-slate-300">
+            <div className="flex items-center justify-between rounded-lg bg-[#1a1a1a] px-3 py-2">
+              <span>平均密度</span>
+              <span className="font-semibold text-slate-100">
+                {stats.avgMesh}
+                <span className="ml-2 text-[10px] text-slate-400">
+                  ({formatSigned(stats.avgMeshDelta)})
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#1a1a1a] px-3 py-2">
+              <span>ピーク密度</span>
+              <span className="font-semibold text-slate-100">
+                {stats.peakMesh}
+                <span className="ml-2 text-[10px] text-slate-400">
+                  ({formatSigned(stats.peakMeshDelta)})
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#1a1a1a] px-3 py-2">
+              <span>平均稼働率</span>
+              <span className="font-semibold text-slate-100">
+                {stats.avgOccupancy}%
+                <span className="ml-2 text-[10px] text-slate-400">
+                  ({formatSigned(stats.avgOccupancyDelta)}%)
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-[#1a1a1a] px-3 py-2">
+              <span>平均料金</span>
+              <span className="font-semibold text-slate-100">
+                {formatYen(stats.avgPrice)}
+                <span className="ml-2 text-[10px] text-slate-400">
+                  ({formatSigned(stats.avgPriceDelta)})
+                </span>
+              </span>
+            </div>
+          </div>
           <div className="mt-4 space-y-2 text-xs">
             {scenario.rules.map((rule) => (
               <div
@@ -393,28 +453,61 @@ const MapView = ({
 
   const timelineStats = useMemo(() => {
     const meshTotal = meshDisplay.reduce((sum, mesh) => sum + mesh.count, 0);
+    const meshBaseTotal = meshDisplay.reduce(
+      (sum, mesh) => sum + mesh.baseCount,
+      0
+    );
     const meshPeak = meshDisplay.reduce(
       (max, mesh) => Math.max(max, mesh.count),
+      0
+    );
+    const meshPeakBase = meshDisplay.reduce(
+      (max, mesh) => Math.max(max, mesh.baseCount),
       0
     );
     const parkingTotal = parkingDisplay.reduce(
       (sum, lot) => sum + lot.occupancyValue,
       0
     );
+    const parkingBaseTotal = parkingDisplay.reduce(
+      (sum, lot) => sum + lot.baseOcc,
+      0
+    );
     const priceTotal = parkingDisplay.reduce(
       (sum, lot) => sum + lot.priceValue,
+      0
+    );
+    const priceBaseTotal = parkingDisplay.reduce(
+      (sum, lot) => sum + lot.basePrice,
       0
     );
     const meshCount = Math.max(meshDisplay.length, 1);
     const parkingCount = Math.max(parkingDisplay.length, 1);
 
+    const avgMesh = Math.round(meshTotal / meshCount);
+    const avgMeshBase = Math.round(meshBaseTotal / meshCount);
+    const avgOccupancy = Math.round((parkingTotal / parkingCount) * 100);
+    const avgOccupancyBase = Math.round((parkingBaseTotal / parkingCount) * 100);
+    const avgPrice = Math.round(priceTotal / parkingCount);
+    const avgPriceBase = Math.round(priceBaseTotal / parkingCount);
+
     return {
-      avgMesh: Math.round(meshTotal / meshCount),
+      avgMesh,
       peakMesh: meshPeak,
-      avgOccupancy: Math.round((parkingTotal / parkingCount) * 100),
-      avgPrice: Math.round(priceTotal / parkingCount),
+      avgOccupancy,
+      avgPrice,
+      avgMeshBase,
+      peakMeshBase: meshPeakBase,
+      avgOccupancyBase,
+      avgPriceBase,
+      avgMeshDelta: avgMesh - avgMeshBase,
+      peakMeshDelta: meshPeak - meshPeakBase,
+      avgOccupancyDelta: avgOccupancy - avgOccupancyBase,
+      avgPriceDelta: avgPrice - avgPriceBase,
     };
   }, [meshDisplay, parkingDisplay]);
+
+  const timeLabel = timeSlots[timeIndex] ?? "--:--";
 
   const parkingGeojson = useMemo(() => {
     return {
@@ -883,7 +976,15 @@ const MapView = ({
       )}
       <Legend />
       <ReportButton onGenerate={onGenerateReport} disabled={!scenario} />
-      {scenario && <ScenarioCard scenario={scenario} />}
+      {scenario && (
+        <ScenarioCard
+          scenario={scenario}
+          stats={timelineStats}
+          timeLabel={timeLabel}
+          meshCount={meshDisplay.length}
+          parkingCount={parkingDisplay.length}
+        />
+      )}
     </div>
   );
 };

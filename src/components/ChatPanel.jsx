@@ -1,13 +1,12 @@
 ﻿import clsx from "clsx";
-import { scenarioCases } from "../data/mockData";
 
 const ChatBubble = ({ tone = "system", children }) => (
   <div
     className={clsx(
       "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
       tone === "system"
-        ? "self-start border border-white/10 bg-[#141414]/90 text-slate-200"
-        : "self-end border border-[#4E9F3D]/25 bg-[#151515]/90 text-slate-200"
+        ? "self-start bg-[#1f1f1f] text-white"
+        : "self-end bg-[#4E9F3D] text-white"
     )}
   >
     {children}
@@ -16,7 +15,7 @@ const ChatBubble = ({ tone = "system", children }) => (
 
 const SuggestionButton = ({ label, onClick }) => (
   <button
-    className="w-full rounded-full border border-white/10 bg-[#141414]/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:-translate-y-0.5 hover:border-[#4E9F3D]/60 hover:bg-[#171717]/95"
+    className="w-full rounded-full bg-[#1f1f1f] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:bg-[#4E9F3D]"
     onClick={onClick}
   >
     {label}
@@ -26,10 +25,10 @@ const SuggestionButton = ({ label, onClick }) => (
 const MethodCard = ({ title, description, active, onClick }) => (
   <button
     className={clsx(
-      "w-full rounded-2xl border px-4 py-3 text-left text-sm transition",
+      "w-full rounded-2xl px-4 py-3 text-left text-sm transition",
       active
-        ? "border-[#4E9F3D]/45 bg-[#161c16]/90 text-slate-100 shadow-md"
-        : "border-white/10 bg-[#131313]/90 text-slate-300 hover:-translate-y-0.5 hover:bg-[#161616]/95"
+        ? "bg-[#4E9F3D] text-white shadow-md"
+        : "bg-[#1f1f1f] text-slate-200 hover:-translate-y-0.5 hover:bg-[#242424]"
     )}
     onClick={onClick}
   >
@@ -41,10 +40,10 @@ const MethodCard = ({ title, description, active, onClick }) => (
 const ScenarioOption = ({ scenario, active, onClick }) => (
   <button
     className={clsx(
-      "w-full rounded-2xl border px-4 py-3 text-left text-sm transition",
+      "w-full rounded-2xl px-4 py-3 text-left text-sm transition",
       active
-        ? "border-[#4E9F3D]/45 bg-[#161c16]/90 text-slate-100 shadow-md"
-        : "border-white/10 bg-[#131313]/90 text-slate-300 hover:-translate-y-0.5 hover:bg-[#161616]/95"
+        ? "bg-[#4E9F3D] text-white shadow-md"
+        : "bg-[#1f1f1f] text-slate-200 hover:-translate-y-0.5 hover:bg-[#242424]"
     )}
     onClick={onClick}
   >
@@ -61,8 +60,8 @@ const ActionPanel = ({
   selectedMethod,
   onSelectMethod,
   selectedScenario,
-  onSelectScenario,
   timeLabel,
+  onOpenScenarioDialog,
   onExit,
 }) => (
   <div className="panel-scroll max-h-[40dvh] overflow-y-auto rounded-2xl border border-white/10 bg-[#121212]/90 p-4 shadow-sm lg:max-h-[45%]">
@@ -125,14 +124,14 @@ const ActionPanel = ({
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
             動的価格シナリオ
           </div>
-          {scenarioCases.map((scenario) => (
+          <SuggestionButton label="シナリオを選択" onClick={onOpenScenarioDialog} />
+          {selectedScenario && (
             <ScenarioOption
-              key={scenario.id}
-              scenario={scenario}
-              active={selectedScenario?.id === scenario.id}
-              onClick={() => onSelectScenario(scenario)}
+              scenario={selectedScenario}
+              active
+              onClick={onOpenScenarioDialog}
             />
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -147,9 +146,9 @@ const ChatPanel = ({
   selectedMethod,
   onSelectMethod,
   selectedScenario,
-  onSelectScenario,
   timeLabel,
   className,
+  onOpenScenarioDialog,
   onExit,
 }) => (
   <div
@@ -189,8 +188,8 @@ const ChatPanel = ({
         selectedMethod={selectedMethod}
         onSelectMethod={onSelectMethod}
         selectedScenario={selectedScenario}
-        onSelectScenario={onSelectScenario}
         timeLabel={timeLabel}
+        onOpenScenarioDialog={onOpenScenarioDialog}
         onExit={onExit}
       />
     </div>

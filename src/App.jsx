@@ -3,7 +3,13 @@ import html2canvas from "html2canvas";
 import ChatPanel from "./components/ChatPanel.jsx";
 import HeroScene from "./components/HeroScene.jsx";
 import MapView from "./components/MapView.jsx";
-import { center, meshCells, parkingLots, timeSlots } from "./data/mockData.js";
+import {
+  center,
+  meshCells,
+  parkingLots,
+  scenarioCases,
+  timeSlots,
+} from "./data/mockData.js";
 import {
   applyScenarioToMeshCount,
   applyScenarioToParking,
@@ -22,6 +28,8 @@ const App = () => {
   const [showFixOptions, setShowFixOptions] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
+  const [showScenarioDialog, setShowScenarioDialog] = useState(false);
+  const [mapPreviewUrl, setMapPreviewUrl] = useState("");
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
 
@@ -123,6 +131,31 @@ const App = () => {
         : "比較用のベースラインスナップショットを取得しました。",
     };
   }, [meshDisplay, parkingDisplay, timeIndex, selectedScenario]);
+
+  const captureMapPreview = () => {
+    try {
+      const mapInstance = mapRef.current?.getMap?.() ?? mapRef.current;
+      const mapCanvas = mapInstance?.getCanvas?.();
+      if (mapCanvas) {
+        return mapCanvas.toDataURL("image/png");
+      }
+    } catch (error) {
+      console.warn("Map preview capture failed.", error);
+    }
+    return "";
+  };
+
+  const handleOpenScenarioDialog = () => {
+    const preview = captureMapPreview();
+    setMapPreviewUrl(preview);
+    setShowScenarioDialog(true);
+  };
+
+  const handleSelectScenario = (scenario) => {
+    setSelectedScenario(scenario);
+    setSelectedMethod("pricing");
+    setShowScenarioDialog(false);
+  };
 
   const handleGenerateReport = async () => {
     if (!selectedScenario || !mapContainerRef.current) return;
@@ -367,14 +400,14 @@ const App = () => {
             setSelectedMethod(method);
             if (method !== "pricing") {
               setSelectedScenario(null);
+              setShowScenarioDialog(false);
+              return;
             }
+            handleOpenScenarioDialog();
           }}
           selectedScenario={selectedScenario}
-          onSelectScenario={(scenario) => {
-            setSelectedScenario(scenario);
-            setSelectedMethod("pricing");
-          }}
           timeLabel={timeSlots[timeIndex]}
+          onOpenScenarioDialog={handleOpenScenarioDialog}
           onExit={() => setScreen("landing")}
         />
 
@@ -398,6 +431,87 @@ const App = () => {
           />
         </div>
       </div>
+
+      {showScenarioDialog && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 py-6"
+          onClick={() => setShowScenarioDialog(false)}
+        >
+          <div
+            className="glass-panel w-full max-w-[640px] rounded-3xl border border-white/10 bg-[#0f0f0f]/95 p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.32em] text-slate-400">
+                  動的価格シナリオ
+                </div>
+                <div className="mt-1 text-xl font-semibold text-slate-50">ケースを選択</div>
+                <div className="mt-1 text-xs text-slate-400">
+                  それぞれの施策でマップの流れを比較できます。
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScenarioDialog(false)}
+                className="rounded-full bg-[#1f1f1f] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-200 transition hover:bg-[#242424]"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              {scenarioCases.map((scenario) => {
+                const isActive = selectedScenario?.id === scenario.id;
+                return (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    onClick={() => handleSelectScenario(scenario)}
+                    className={`group w-full overflow-hidden rounded-2xl border text-left transition ${
+                      isActive
+                        ? "border-[#4E9F3D] bg-[#141414] text-white ring-1 ring-[#4E9F3D]/40"
+                        : "border-white/10 bg-[#1a1a1a] text-slate-200 hover:border-[#4E9F3D]/40 hover:bg-[#1f1f1f]"
+                    }`}
+                  >
+                    <div className="relative h-32 w-full overflow-hidden">
+                      {mapPreviewUrl ? (
+                        <img
+                          src={mapPreviewUrl}
+                          alt={`${scenario.title} プレビュー`}
+                          className="h-full w-full object-cover opacity-85 transition group-hover:opacity-95"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[10px] text-slate-500">
+                          プレビューなし
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      <div className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-slate-200">
+                        Case {scenario.id}
+                      </div>
+                    </div>
+                    <div className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold">{scenario.title}</div>
+                        {isActive && (
+                          <span className="rounded-full bg-[#4E9F3D] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.25em] text-black">
+                            選択中
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-400">{scenario.pattern}</div>
+                      <div className="mt-2 text-[11px] text-slate-400 line-clamp-2">
+                        {scenario.summary}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
