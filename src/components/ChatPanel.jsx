@@ -6,8 +6,8 @@ const ChatBubble = ({ tone = "system", children }) => (
     className={clsx(
       "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
       tone === "system"
-        ? "self-start border border-white/10 bg-[#0d0d0d]/85 text-slate-100"
-        : "self-end border border-[#4E9F3D]/40 bg-[#101510]/70 text-slate-200"
+        ? "self-start border border-white/10 bg-[#141414]/90 text-slate-200"
+        : "self-end border border-[#4E9F3D]/25 bg-[#151515]/90 text-slate-200"
     )}
   >
     {children}
@@ -16,7 +16,7 @@ const ChatBubble = ({ tone = "system", children }) => (
 
 const SuggestionButton = ({ label, onClick }) => (
   <button
-    className="w-full rounded-full border border-[#4E9F3D]/45 bg-[#0d0d0d]/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#d7f2d0] transition hover:-translate-y-0.5 hover:border-[#4E9F3D]/70 hover:bg-[#132014]/80"
+    className="w-full rounded-full border border-white/10 bg-[#141414]/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:-translate-y-0.5 hover:border-[#4E9F3D]/60 hover:bg-[#171717]/95"
     onClick={onClick}
   >
     {label}
@@ -28,8 +28,8 @@ const MethodCard = ({ title, description, active, onClick }) => (
     className={clsx(
       "w-full rounded-2xl border px-4 py-3 text-left text-sm transition",
       active
-        ? "border-[#4E9F3D]/70 bg-[#101510]/80 text-[#e1f6dc] shadow-md"
-        : "border-white/10 bg-[#0b0b0b]/80 text-slate-200 hover:-translate-y-0.5 hover:bg-[#111111]/90"
+        ? "border-[#4E9F3D]/45 bg-[#161c16]/90 text-slate-100 shadow-md"
+        : "border-white/10 bg-[#131313]/90 text-slate-300 hover:-translate-y-0.5 hover:bg-[#161616]/95"
     )}
     onClick={onClick}
   >
@@ -43,8 +43,8 @@ const ScenarioOption = ({ scenario, active, onClick }) => (
     className={clsx(
       "w-full rounded-2xl border px-4 py-3 text-left text-sm transition",
       active
-        ? "border-[#4E9F3D]/70 bg-[#101510]/80 text-[#e1f6dc] shadow-md"
-        : "border-white/10 bg-[#0b0b0b]/80 text-slate-200 hover:-translate-y-0.5 hover:bg-[#111111]/90"
+        ? "border-[#4E9F3D]/45 bg-[#161c16]/90 text-slate-100 shadow-md"
+        : "border-white/10 bg-[#131313]/90 text-slate-300 hover:-translate-y-0.5 hover:bg-[#161616]/95"
     )}
     onClick={onClick}
   >
@@ -65,11 +65,11 @@ const ActionPanel = ({
   timeLabel,
   onExit,
 }) => (
-  <div className="panel-scroll max-h-[40dvh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0d0d]/80 p-4 shadow-sm lg:max-h-[45%]">
+  <div className="panel-scroll max-h-[40dvh] overflow-y-auto rounded-2xl border border-white/10 bg-[#121212]/90 p-4 shadow-sm lg:max-h-[45%]">
     <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
       <span>セッション操作</span>
       <button
-        className="rounded-full border border-white/10 bg-[#0b0b0b]/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-300 transition hover:-translate-y-0.5 hover:border-[#4E9F3D]/60"
+        className="rounded-full border border-white/10 bg-[#141414]/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-300 transition hover:-translate-y-0.5 hover:border-[#4E9F3D]/60"
         onClick={onExit}
         type="button"
       >
@@ -77,13 +77,13 @@ const ActionPanel = ({
       </button>
     </div>
     <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-300">
-      <span className="rounded-full border border-white/10 bg-[#0b0b0b]/80 px-3 py-1">
+      <span className="rounded-full border border-white/10 bg-[#141414]/90 px-3 py-1">
         小樽運河
       </span>
-      <span className="rounded-full border border-white/10 bg-[#0b0b0b]/80 px-3 py-1">
+      <span className="rounded-full border border-white/10 bg-[#141414]/90 px-3 py-1">
         未来モード
       </span>
-      <span className="rounded-full border border-white/10 bg-[#0b0b0b]/80 px-3 py-1">
+      <span className="rounded-full border border-white/10 bg-[#141414]/90 px-3 py-1">
         時刻 {timeLabel}
       </span>
     </div>
@@ -159,7 +159,7 @@ const ChatPanel = ({
     )}
   >
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="panel-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl bg-[#0b0b0b]/80 p-4 shadow-inner">
+      <div className="panel-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl bg-[#101010]/90 p-4 shadow-inner">
         <ChatBubble tone="system">
           運河中心部の混雑が高まっています。未来の混雑と価格のシミュレーションを開始できます。
         </ChatBubble>
@@ -196,7 +196,7 @@ const ChatPanel = ({
     </div>
 
     <form
-      className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0b0b0b]/85 px-3 py-2 shadow-sm"
+      className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#111111]/90 px-3 py-2 shadow-sm"
       onSubmit={(event) => event.preventDefault()}
     >
       <input
@@ -205,7 +205,7 @@ const ChatPanel = ({
       />
       <button
         type="submit"
-        className="rounded-full bg-[#4E9F3D]/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0b140c] transition hover:bg-[#4E9F3D]"
+        className="rounded-full bg-[#4E9F3D]/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#0b140c] transition hover:bg-[#4E9F3D] leading-none"
       >
         送信
       </button>
