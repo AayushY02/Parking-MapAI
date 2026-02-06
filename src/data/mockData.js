@@ -137,37 +137,37 @@ export const meshCells = meshBase.map((cell) => {
     counts,
     isCore: distance < ringCutoff,
     isEdge: distance > edgeCutoff,
-    label: distance < ringCutoff ? "Canal Core" : distance > edgeCutoff ? "Outer Fringe" : "Canal Ring",
+    label: distance < ringCutoff ? "運河中心" : distance > edgeCutoff ? "外縁" : "運河リング",
   };
 });
 
 const lotNamePrefixes = [
-  "Canal",
-  "Market",
-  "Warehouse",
-  "Harbor",
-  "Station",
-  "Promenade",
-  "Heritage",
-  "Bridge",
-  "Unga",
-  "Historic",
-  "Pier",
-  "North",
-  "South",
-  "East",
-  "West",
+  "運河",
+  "市場",
+  "倉庫",
+  "港",
+  "駅前",
+  "散策路",
+  "歴史地区",
+  "橋",
+  "海側",
+  "旧市街",
+  "埠頭",
+  "北",
+  "南",
+  "東",
+  "西",
 ];
 
 const lotNameSuffixes = [
-  "Lot",
-  "Deck",
-  "Terrace",
-  "Hub",
-  "Gate",
-  "Square",
-  "Yard",
-  "Garage",
+  "駐車場",
+  "デッキ",
+  "テラス",
+  "ハブ",
+  "ゲート",
+  "広場",
+  "ヤード",
+  "ガレージ",
 ];
 
 const createParkingLots = (count) => {
@@ -233,38 +233,38 @@ export const parkingLots = parkingSeeds.map((lot) => {
 export const scenarioCases = [
   {
     id: "peak",
-    title: "Peak Hours Pricing",
-    pattern: "Midday surge / morning relief",
+    title: "ピーク時間の価格調整",
+    pattern: "昼ピーク強化 / 午前緩和",
     summary:
-      "Midday prices climb to cool peak congestion while morning rates soften to encourage early arrivals.",
+      "昼の価格を上げてピークを冷却し、午前は下げて早期到着を促進します。",
     rules: [
-      "Midday window (12:15–13:30) runs a premium uplift",
-      "Morning window (11:00–11:45) runs a softer rate",
-      "Occupancy colors drift to show redistribution",
+      "昼帯（12:15〜13:30）はプレミアム上乗せ",
+      "午前帯（11:00〜11:45）は割引",
+      "色の変化で再分配を可視化",
     ],
   },
   {
     id: "demand",
-    title: "Demand-Based Pricing",
-    pattern: "Live occupancy response",
+    title: "需要連動価格",
+    pattern: "稼働率に応答",
     summary:
-      "Prices flex with current occupancy, nudging drivers away from full lots toward quieter blocks.",
+      "稼働率に応じて価格を調整し、満車から空きへ誘導します。",
     rules: [
-      "High-occupancy lots get a price boost",
-      "Low-occupancy lots receive a discount",
-      "Changes animate over ~1 second",
+      "高稼働の駐車場は価格上昇",
+      "低稼働の駐車場は割引",
+      "変化は約1秒でアニメーション",
     ],
   },
   {
     id: "balance",
-    title: "Area-Based Redistribution",
-    pattern: "Hotspot buffering",
+    title: "エリア再配分",
+    pattern: "ホットスポット緩衝",
     summary:
-      "Hotspot-adjacent lots go premium while surrounding areas discount to pull vehicles outward.",
+      "ホットスポット近くは値上げ、周辺は割引で外側へ誘導します。",
     rules: [
-      "Hotspot-adjacent parking gets a price lift",
-      "Surrounding areas receive a lower price band",
-      "Outbound arrows visualize redistribution",
+      "ホットスポット近傍は価格上昇",
+      "周辺エリアは低価格帯",
+      "外向き矢印で再配分を表示",
     ],
   },
 ];
@@ -284,15 +284,15 @@ export const getMeshBand = (count) => {
 };
 
 export const meshBandColors = {
-  high: "#f97316",
-  mid: "#facc15",
-  low: "#22c55e",
+  high: "#73c95c",
+  mid: "#4e9f3d",
+  low: "#2f6b34",
 };
 
 export const occupancyColors = {
-  high: "#ef4444",
-  mid: "#facc15",
-  low: "#22c55e",
+  high: "#5fb950",
+  mid: "#3c7e3a",
+  low: "#26592f",
 };
 
 export { clamp };

@@ -1,6 +1,7 @@
-﻿import { useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import ChatPanel from "./components/ChatPanel.jsx";
+import HeroScene from "./components/HeroScene.jsx";
 import MapView from "./components/MapView.jsx";
 import { center, meshCells, parkingLots, timeSlots } from "./data/mockData.js";
 import {
@@ -22,6 +23,25 @@ const App = () => {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (screen !== "landing") return;
+    const elements = document.querySelectorAll("[data-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [screen]);
 
   const meshDisplay = useMemo(() => {
     return meshCells.map((mesh) => {
@@ -99,20 +119,33 @@ const App = () => {
       priceBefore,
       priceAfter,
       narrative: selectedScenario
-        ? `Peak density drops by ${peakDrop}%, while average occupancy settles closer to the target band.`
-        : "Baseline snapshot collected for comparison.",
+        ? `ピーク密度は${peakDrop}%低下し、平均稼働率は目標帯に近づきました。`
+        : "比較用のベースラインスナップショットを取得しました。",
     };
   }, [meshDisplay, parkingDisplay, timeIndex, selectedScenario]);
 
   const handleGenerateReport = async () => {
     if (!selectedScenario || !mapContainerRef.current) return;
 
-    const canvas = await html2canvas(mapContainerRef.current, {
-      useCORS: true,
-      backgroundColor: "#f8fafc",
-      scale: 2,
-    });
-    const imageDataUrl = canvas.toDataURL("image/png");
+    let imageDataUrl = "";
+    try {
+      const mapInstance = mapRef.current?.getMap?.() ?? mapRef.current;
+      const mapCanvas = mapInstance?.getCanvas?.();
+      if (mapCanvas) {
+        imageDataUrl = mapCanvas.toDataURL("image/png");
+      }
+    } catch (error) {
+      console.warn("Map capture failed, fallback to html2canvas.", error);
+    }
+
+    if (!imageDataUrl) {
+      const canvas = await html2canvas(mapContainerRef.current, {
+        useCORS: true,
+        backgroundColor: "#191a19",
+        scale: 2,
+      });
+      imageDataUrl = canvas.toDataURL("image/png");
+    }
 
     const reportHtml = buildReportHtml({
       scenario: selectedScenario,
@@ -125,7 +158,7 @@ const App = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Map_AI_Report_${timeSlots[timeIndex].replace(":", "")}.html`;
+    link.download = `MapAI_レポート_${timeSlots[timeIndex].replace(":", "")}.html`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -134,134 +167,156 @@ const App = () => {
 
   if (screen === "landing") {
     return (
-      <div className="app-shell px-4 py-12 lg:px-10 lg:py-16">
+      <div className="app-shell landing px-4 py-10 lg:px-12 lg:py-16">
         <div className="mx-auto flex max-w-6xl flex-col gap-10">
-          <div className="relative overflow-hidden rounded-[36px] bg-white/85 p-8 shadow-xl sm:p-10">
-            <div className="pointer-events-none absolute -right-24 -top-20 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl" />
-            <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-sky-200/40 blur-3xl" />
-
-            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="flex flex-col gap-6">
-                <div className="text-xs font-semibold uppercase tracking-[0.5em] text-slate-400">
-                  Map AI
-                </div>
-                <h1 className="hero-title text-4xl leading-tight text-slate-900 lg:text-5xl">
-                  Dynamic parking intelligence for Otaru Canal
+          <section className="hero-shell">
+            <div className="hero-grid">
+              <div className="flex flex-col gap-6" data-reveal>
+                <div className="hero-kicker">マップAI</div>
+                <h1 className="hero-title text-4xl leading-tight text-slate-50 lg:text-5xl">
+                  小樽運河の混雑を、光で読む。
                 </h1>
-                <p className="text-sm leading-relaxed text-slate-600">
-                  Map AI fuses 250m mesh demand, occupancy, and pricing
-                  simulations so planners can reduce over-tourism pressure
-                  without sacrificing footfall.
+                <p className="text-sm leading-relaxed text-slate-300">
+                  250mメッシュの需要・稼働率・価格シミュレーションを重ね、
+                  観光圧を抑えながら滞在体験の質を保ちます。
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
+                    className="hero-cta"
                     onClick={() => setScreen("future")}
                   >
-                    Launch Future Mode
+                    未来モードを起動
                   </button>
                   <button
-                    className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5"
+                    className="hero-ghost"
                     onClick={() => setScreen("current")}
                   >
-                    View Current Mode
+                    現在モードを見る
                   </button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs text-slate-500">
-                    <div>Live mesh coverage</div>
-                    <div className="mt-2 text-lg font-semibold text-slate-900">
-                      {meshCells.length} cells
-                    </div>
+                  <div className="metric-card">
+                    <div>ライブメッシュ監視</div>
+                    <div className="metric-value">{meshCells.length} セル</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs text-slate-500">
-                    <div>Parking inventory</div>
-                    <div className="mt-2 text-lg font-semibold text-slate-900">
-                      {parkingLots.length} lots
-                    </div>
+                  <div className="metric-card">
+                    <div>駐車場インベントリ</div>
+                    <div className="metric-value">{parkingLots.length} 箇所</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-xs text-slate-500">
-                    <div>Update cadence</div>
-                    <div className="mt-2 text-lg font-semibold text-slate-900">
-                      15 min
-                    </div>
+                  <div className="metric-card">
+                    <div>更新間隔</div>
+                    <div className="metric-value">15 分</div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
-                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    Simulation Brief
-                  </div>
-                  <div className="mt-3 text-sm text-slate-600">
-                    Peak demand arrives between 12:30 and 13:30. Map AI rebalances
-                    pricing and flow across the canal spine before congestion spills
-                    into residential streets.
-                  </div>
-                  <div className="mt-4 rounded-2xl bg-slate-900 px-4 py-3 text-xs text-white">
-                    Scenario ready: dynamic pricing waves across {parkingLots.length} lots.
+              <div className="hero-visual" data-reveal style={{ transitionDelay: "120ms" }}>
+                <HeroScene />
+                <div className="hero-glow" />
+                <div className="hero-card">
+                  <div className="hero-card-title">シミュレーション概況</div>
+                  <p className="text-xs text-slate-300">
+                    12:30〜13:30に需要が最大化。価格と誘導の組み合わせで
+                    住宅地への溢れを先回りで抑制します。
+                  </p>
+                  <div className="hero-card-badge">
+                    シナリオ準備完了：{parkingLots.length}拠点で動的価格波を適用
                   </div>
                 </div>
-
-                <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm">
-                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    What You Can Do
-                  </div>
-                  <div className="mt-4 grid gap-3 text-sm text-slate-600">
-                    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
-                      Inspect live mesh density and occupancy changes by 15-minute slice.
-                    </div>
-                    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
-                      Compare pricing scenarios to find the best congestion relief mix.
-                    </div>
-                    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
-                      Generate a report with before-and-after impact metrics.
-                    </div>
-                  </div>
+                <div className="hero-card mini" style={{ bottom: "8%", right: "8%" }}>
+                  <div className="hero-card-title">体験の流れ</div>
+                  <p className="text-xs text-slate-300">
+                    時系列をスライドして、密度の変化と流動矢印を比較。
+                  </p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <div className="ticker" data-reveal>
+            <div className="ticker-track">
+              <span>密度</span>
+              <span>稼働率</span>
+              <span>価格</span>
+              <span>流動</span>
+              <span>体験</span>
+              <span>ガイダンス</span>
+              <span>混雑緩和</span>
+              <span>密度</span>
+              <span>稼働率</span>
+              <span>価格</span>
+              <span>流動</span>
+              <span>体験</span>
+              <span>ガイダンス</span>
+              <span>混雑緩和</span>
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="glass-panel rounded-3xl p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                Mesh Intelligence
-              </div>
-              <div className="mt-2 text-lg font-semibold text-slate-900">
-                Real-time density heatmaps
-              </div>
-              <p className="mt-2 text-sm text-slate-600">
-                Visualize crowd pressure in 250m grids and surface high-risk pockets
-                before they overwhelm the canal core.
+          <section className="grid gap-6 lg:grid-cols-3">
+            <div className="glass-panel feature-card" data-reveal>
+              <div className="feature-kicker">メッシュインサイト</div>
+              <div className="feature-title">リアルタイム密度ヒート</div>
+              <p className="feature-body">
+                250mグリッドで混雑の波を可視化し、危険ゾーンを先に検出。
               </p>
             </div>
-            <div className="glass-panel rounded-3xl p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                Pricing Studio
-              </div>
-              <div className="mt-2 text-lg font-semibold text-slate-900">
-                Adaptive parking controls
-              </div>
-              <p className="mt-2 text-sm text-slate-600">
-                Model price shifts that smooth demand across lots while protecting
-                visitor experience.
+            <div
+              className="glass-panel feature-card"
+              data-reveal
+              style={{ transitionDelay: "120ms" }}
+            >
+              <div className="feature-kicker">価格スタジオ</div>
+              <div className="feature-title">適応型の価格制御</div>
+              <p className="feature-body">
+                需要に合わせた価格調整で、満車圧力を滑らかに分散。
               </p>
             </div>
-            <div className="glass-panel rounded-3xl p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                Flow Orchestration
-              </div>
-              <div className="mt-2 text-lg font-semibold text-slate-900">
-                Scenario-driven outcomes
-              </div>
-              <p className="mt-2 text-sm text-slate-600">
-                Tune guidance, wayfinding, and incentives to pull visitors toward
-                calmer routes and lots.
+            <div
+              className="glass-panel feature-card"
+              data-reveal
+              style={{ transitionDelay: "240ms" }}
+            >
+              <div className="feature-kicker">フロー設計</div>
+              <div className="feature-title">シナリオ駆動の誘導</div>
+              <p className="feature-body">
+                矢印とベクトルで人流の向きを可視化し、ルート戦略を更新。
               </p>
             </div>
-          </div>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="glass-panel story-card" data-reveal>
+              <div className="feature-kicker">できること</div>
+              <div className="feature-title">未来の混雑を安全に試す</div>
+              <p className="feature-body">
+                タイムライン、価格シナリオ、誘導を組み合わせて
+                小樽運河のピーク帯を仮想で調整できます。
+              </p>
+              <div className="story-grid">
+                <div className="story-item">15分刻みの変化をスクロールで追跡</div>
+                <div className="story-item">価格差と稼働差を一目で比較</div>
+                <div className="story-item">レポートで施策前後を共有</div>
+              </div>
+            </div>
+            <div
+              className="glass-panel story-card"
+              data-reveal
+              style={{ transitionDelay: "120ms" }}
+            >
+              <div className="feature-kicker">モード切替</div>
+              <div className="feature-title">いま/未来の切替が即時</div>
+              <p className="feature-body">
+                現在モードでは実運用を想定、未来モードでは施策を試算。
+              </p>
+              <div className="story-grid">
+                <div className="story-item">現在モード：現状の混雑を確認</div>
+                <div className="story-item">未来モード：施策を試して比較</div>
+              </div>
+              <button className="hero-cta mt-4" onClick={() => setScreen("future")}>
+                未来モードへ
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -270,27 +325,27 @@ const App = () => {
   if (screen === "current") {
     return (
       <div className="app-shell px-6 py-16">
-        <div className="mx-auto max-w-4xl rounded-3xl bg-white/80 p-10 shadow-lg">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-[#1E5128]/70 bg-[#191A19]/80 p-10 shadow-lg">
           <div className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
-            Map AI
+            マップAI
           </div>
-          <h1 className="hero-title mt-4 text-3xl text-slate-900">Current Mode</h1>
-          <p className="mt-3 text-sm text-slate-600">
-            Live feeds are mocked in this prototype. Jump to Future mode to
-            explore dynamic pricing simulations.
+          <h1 className="hero-title mt-4 text-3xl text-slate-50">現在モード</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            このプロトタイプではライブデータを模擬しています。未来モードで
+            動的価格シミュレーションを確認できます。
           </p>
           <div className="mt-6 flex gap-3">
             <button
-              className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5"
+              className="hero-ghost"
               onClick={() => setScreen("landing")}
             >
-              Back
+              戻る
             </button>
             <button
-              className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
+              className="hero-cta"
               onClick={() => setScreen("future")}
             >
-              Go to Future
+              未来モードへ
             </button>
           </div>
         </div>
@@ -325,6 +380,7 @@ const App = () => {
 
         <div className="map-shell min-h-0 overflow-hidden rounded-3xl">
           <MapView
+            mapRef={mapRef}
             mapContainerRef={mapContainerRef}
             center={center}
             meshDisplay={meshDisplay}

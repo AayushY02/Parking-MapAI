@@ -1,4 +1,11 @@
-import { point, distance as turfDistance, destination, bearing } from "@turf/turf";
+﻿import {
+  bearing,
+  bezierSpline,
+  destination,
+  distance as turfDistance,
+  lineString,
+  point,
+} from "@turf/turf";
 import { clamp } from "../data/mockData";
 
 const toPoint = ([lat, lng]) => point([lng, lat]);
@@ -16,6 +23,30 @@ const peakPriceMultiplier = (timeIndex, slotCount) => {
 const demandPriceMultiplier = (occupancy) => {
   const pressure = clamp((occupancy - 0.55) / 0.35, -1, 1);
   return 1 + pressure * 0.3;
+};
+
+const buildCurvePath = (from, to, curveStrength = 0.22, direction = 1) => {
+  const start = toPoint(from);
+  const end = toPoint(to);
+  const distanceKm = turfDistance(start, end, { units: "kilometers" });
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0.05) {
+    return [from, to];
+  }
+
+  const heading = bearing(start, end);
+  const mid = destination(start, distanceKm * 0.5, heading, { units: "kilometers" });
+  const offsetDistance = clamp(distanceKm * curveStrength, 0.12, 0.45);
+  const control = destination(mid, offsetDistance, heading + 90 * direction, {
+    units: "kilometers",
+  });
+
+  const base = lineString([
+    start.geometry.coordinates,
+    control.geometry.coordinates,
+    end.geometry.coordinates,
+  ]);
+  const curved = bezierSpline(base, { sharpness: 0.85 });
+  return curved.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 };
 
 export const buildScenarioContext = (scenarioId, meshDisplay) => {
@@ -146,33 +177,65 @@ export const buildFlowLines = (scenarioId, meshDisplay, context = {}) => {
 
   if (scenarioId === "peak") {
     if (!hotspots?.length || !lowspots?.length) return [];
-    return hotspots.slice(0, 3).map((hotspot, index) => ({
-      from: hotspot.center,
-      to: lowspots[index % lowspots.length].center,
-      weight: clamp(
-        (hotspot.intensity - lowspots[index % lowspots.length].intensity) / 120,
-        0.4,
-        1
-      ),
-      color: "#38bdf8",
-      label: "Shift to lower pressure",
-    }));
+    return hotspots.slice(0, 3).map((hotspot, index) => {
+      const target = lowspots[index % lowspots.length];
+      const delta = Math.max(0, Math.round(hotspot.intensity - target.intensity));
+      const weight = clamp(delta / 130, 0.45, 1);
+      const direction = index % 2 === 0 ? 1 : -1;
+      return {
+        from: hotspot.center,
+        to: target.center,
+        path: buildCurvePath(hotspot.center, target.center, 0.25, direction),
+        weight,
+        color: "#6fcb5a",
+        label: "低密度エリアへシフト",
+        value: delta,
+        trend: "down",
+      };
+    });
+  }
+
+  if (scenarioId === "demand") {
+    if (!hotspots?.length || !lowspots?.length) return [];
+    return hotspots.slice(0, 2).map((hotspot, index) => {
+      const target = lowspots[(index + 1) % lowspots.length];
+      const delta = Math.max(0, Math.round(hotspot.intensity - target.intensity));
+      const weight = clamp(delta / 140, 0.4, 0.95);
+      const direction = index % 2 === 0 ? -1 : 1;
+      return {
+        from: hotspot.center,
+        to: target.center,
+        path: buildCurvePath(hotspot.center, target.center, 0.2, direction),
+        weight,
+        color: "#4e9f3d",
+        label: "需要に応じた誘導",
+        value: delta,
+        trend: "down",
+      };
+    });
   }
 
   if (scenarioId === "balance") {
     if (!hotspots?.length || !gridCenter) return [];
     const gridPoint = toPoint([gridCenter.lat, gridCenter.lng]);
 
-    return hotspots.slice(0, 4).map((hotspot) => {
+    return hotspots.slice(0, 4).map((hotspot, index) => {
       const start = toPoint(hotspot.center);
       const heading = bearing(gridPoint, start);
       const end = destination(start, 0.85, heading, { units: "kilometers" });
+      const target = [end.geometry.coordinates[1], end.geometry.coordinates[0]];
+      const delta = Math.max(0, Math.round(hotspot.intensity - 70));
+      const weight = clamp(delta / 120, 0.5, 1.2);
+      const direction = index % 2 === 0 ? 1 : -1;
       return {
         from: hotspot.center,
-        to: [end.geometry.coordinates[1], end.geometry.coordinates[0]],
-        weight: clamp((hotspot.intensity - 70) / 120, 0.5, 1.2),
-        color: "#f97316",
-        label: "Outbound redistribution",
+        to: target,
+        path: buildCurvePath(hotspot.center, target, 0.28, direction),
+        weight,
+        color: "#2f6b34",
+        label: "外縁へ再配分",
+        value: delta,
+        trend: "out",
       };
     });
   }

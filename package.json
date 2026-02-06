@@ -15,7 +15,8 @@
     "maplibre-gl": "^4.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-map-gl": "^7.1.6"
+    "react-map-gl": "^7.1.6",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
